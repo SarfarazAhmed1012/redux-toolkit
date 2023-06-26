@@ -1,0 +1,96 @@
+In redux we always have to return a new state, but with redux toolkit it is not the same. we do not need the mutation in the toolkit, because when we install the redux toolkit, we also install immer library along with this, which helps us in mutating the state behind the scene.
+
+we use USESELECTOR to fetch the store like below:
+const { cartItems, total, amount } = useSelector((store) => store.cart);
+// we are fetching the items from the store named cart
+
+Once you have made the store and the data is coming using USESELECTORS, now it is time to make reducers.
+
+Go back to slice, and where name, and initialState are initialized, we will also initialize reducers for that cart. This is what we will see when we create a reducer in slice
+
+const cartSlice = createSlice({
+  name: "cart",
+  initialState,
+  reducers: {
+    clearCart: (state) => {
+      state.cartItems = []
+    }
+  }
+});
+
+Here we do not need any mutation, just add the mutation logic inside reducer, and immer will take care of it
+
+Once we made the reducers, we can use it using useDispatch property of redux tookit.
+
+import { useDispatch } from "react-redux";
+import { clearCart } from "../features/cart/cartSlice";
+
+const CartContainer = () => {
+  const dispatch = useDispatch()
+<button className="btn clear-btn" onClick={()=> dispatch(clearCart())}>clear cart</button>
+
+Above, we used a reducer to dispatch an action, which was to clear a cart
+
+Now we will, write reducers to remove a single item, and also payload, which is actually an arguement which we pass to the reducers
+
+removeItem: (state, action) => {
+      const itemId = action.payload;
+      state.cartItems = state.cartItems.filter((item) => item.id !== itemId);
+    },
+    increment: (state, { payload }) => {
+      const cartItem = state.cartItems.find((item) => item.id === payload.id);
+      cartItem.amount = cartItem.amount + 1;
+    },
+    decrease: (state, { payload }) => {
+      const cartItem = state.cartItems.find((item) => item.id === payload.id);
+      cartItem.amount = cartItem.amount - 1;
+    },
+    calculateTotals: (state) => {
+      let amount = 0;
+      let total = 0;
+      state.cartItems.forEach((item) => {
+        amount += item.amount;
+        total += item.amount * item.price;
+      });
+      state.amount = amount;
+      state.total = total;
+    },
+
+We can use these reducers anywhere we want using dispatch and states using useSelectors:
+
+CreateAsyncThunk:
+
+we have url: 
+const url = "https://course-api.com/react-useReducer-cart-project";
+
+then we have function to fetch the data from an api
+export const getCartItems = createAsyncThunk("cart/getCartItems", () => {
+  return fetch(url)
+    .then((resp) => resp.json())
+    .catch((err) => console.log(err));
+});
+
+then we add extrareducers in our createslice:
+const cartSlice = createSlice({
+  name: "cart",
+  initialState,
+ reducers: {},
+extraReducers: {
+    [getCartItems.pending]: (state) => {
+      state.isLoading = true;
+    },
+    [getCartItems.fulfilled]: (state, action) => {
+      console.log(action);
+      state.cartItems = action.payload;
+      state.isLoading = false;
+    },
+    [getCartItems.rejected]: (state) => {
+      state.isLoading = true;
+    },
+  },
+});
+
+** Note, ayncthunk comes with 3 properties, fulfilled, pending, and rejected. We can handle the logic accordingly just like above
+
+
+
